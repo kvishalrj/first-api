@@ -1,0 +1,64 @@
+from flask import request # type: ignore
+import uuid
+from db import items
+from flask.views import MethodView # type: ignore
+from flask_smorest import Blueprint, abort # type: ignore
+from schemas import ItemSchema, ItemGetSchema, SuccessMessageSchema, ItemOptionalQuerySchema, ItemQuerySchema
+
+
+blp = Blueprint("Items", __name__, description="Operations on items")
+
+
+@blp.route("/item")
+class Item(MethodView):
+
+    @blp.arguments(ItemOptionalQuerySchema, location='query')
+    @blp.response(200, ItemGetSchema(many=True))
+    def get(self, args):
+        id = args.get('id')
+        if not id:
+            return items
+        for item in items:
+            if item['id'] == id:
+                return [item]
+        abort(404, message="Given record doesn't exists")
+
+    @blp.arguments(ItemSchema)
+    @blp.response(200, SuccessMessageSchema)
+    def post(self, request_data):
+        item = {
+            'id' : uuid.uuid4().hex,
+            'item' : {
+                'name' : request_data['name'],
+                'price' : request_data['price']
+            }
+        }
+
+        items.append(item)
+        return {"message" : "Item added successfully"}, 201
+
+    @blp.arguments(ItemSchema)
+    @blp.arguments(ItemQuerySchema, location='query')
+    @blp.response(200, SuccessMessageSchema)
+    def put(self, request_data, args):
+        id = args.get('id')
+        
+        for item in items:
+            if item['id'] == id:
+                item['item'] = request_data
+                return {"message" : "Item updated successfully"}
+        
+        abort(404, message="Item not found")
+
+    @blp.arguments(ItemQuerySchema, location='query')
+    @blp.response(200, SuccessMessageSchema)
+    def delete(self, args):
+        id = args.get('id')
+        
+        for item in items:
+            if item['id'] == id:
+                items.remove(item)
+                return {"message" : "Item deleted successfully"}
+            
+        abort(404, message="Item not found")
+
