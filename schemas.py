@@ -1,4 +1,5 @@
-from marshmallow import Schema, fields  # type: ignore
+from marshmallow import Schema, fields   # type: ignore
+
 
 class ItemSchema(Schema):
     name = fields.Str(required=True)
@@ -7,7 +8,8 @@ class ItemSchema(Schema):
 
 class ItemGetSchema(Schema):
     id = fields.Str(dump_only=True)
-    item = fields.Nested(ItemSchema)
+    name = fields.Str(dump_only=True)
+    price = fields.Int(dump_only=True)
 
 
 class SuccessMessageSchema(Schema):

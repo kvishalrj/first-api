@@ -1,6 +1,6 @@
 from flask import request # type: ignore
 import uuid
-from db import items
+from db import ItemDatabase
 from flask.views import MethodView # type: ignore
 from flask_smorest import Blueprint, abort # type: ignore
 from schemas import ItemSchema, ItemGetSchema, SuccessMessageSchema, ItemOptionalQuerySchema, ItemQuerySchema
@@ -12,16 +12,20 @@ blp = Blueprint("Items", __name__, description="Operations on items")
 @blp.route("/item")
 class Item(MethodView):
 
+    def __init__(self):
+        self.db = ItemDatabase()
+
     @blp.arguments(ItemOptionalQuerySchema, location='query')
     @blp.response(200, ItemGetSchema(many=True))
     def get(self, args):
         id = args.get('id')
         if not id:
-            return items
-        for item in items:
-            if item['id'] == id:
-                return [item]
-        abort(404, message="Given record doesn't exists")
+            return self.db.get_items()
+        else:
+            result = self.db.get_item(id)
+            if not result:
+                abort(404, message="Given record doesn't exists")
+            return result
 
     @blp.arguments(ItemSchema)
     @blp.response(200, SuccessMessageSchema)
