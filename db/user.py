@@ -1,4 +1,4 @@
-import pyodbc 
+import pyodbc  # type: ignore
 
 
 class UserDatabase:
@@ -35,5 +35,14 @@ class UserDatabase:
         else:
             self.conn.commit()
             return True
+        
+    
+    def verify_user(self, username, password):
+        query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+        self.cursor.execute(query)
+        result = self.cursor.fetchone()
+        if result:
+            return result[0]
+
 
 
