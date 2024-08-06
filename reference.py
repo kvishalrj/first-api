@@ -1,6 +1,6 @@
 from flask import Flask, request # type: ignore
 import uuid
-from db import items
+from db.item import items
 
 app = Flask(__name__)
 

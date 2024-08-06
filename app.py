@@ -1,5 +1,6 @@
 from flask import Flask # type: ignore
 from resources.item import blp as ItemBluePrint
+from resources.user import blp as UserBluePrint
 from flask_smorest import Api # type: ignore
 
 
@@ -16,3 +17,4 @@ app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-
 api = Api(app)
 
 api.register_blueprint(ItemBluePrint)
+api.register_blueprint(UserBluePrint)

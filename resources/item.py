@@ -1,6 +1,6 @@
 from flask import request # type: ignore
 import uuid
-from db import ItemDatabase
+from db.item import ItemDatabase
 from flask.views import MethodView # type: ignore
 from flask_smorest import Blueprint, abort # type: ignore
 from schemas import ItemSchema, ItemGetSchema, SuccessMessageSchema, ItemOptionalQuerySchema, ItemQuerySchema
