@@ -1,12 +1,12 @@
 import hashlib
-from flask import request # type: ignore
+from flask import request 
 import uuid
 from db.user import UserDatabase
-from flask.views import MethodView # type: ignore
-from flask_smorest import Blueprint, abort # type: ignore
+from db.blocklist import BlocklistDatabase
+from flask.views import MethodView
+from flask_smorest import Blueprint, abort 
 from schemas import UserSchema, UserQuerySchema, SuccessMessageSchema
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt # type: ignore
-from blocklist import BLOCKLIST
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt
 
 
 blp = Blueprint("Users", __name__, description="Operations on users")
@@ -34,10 +34,13 @@ class UserLogin(MethodView):
 @blp.route("/logout")
 class UserLogout(MethodView):
 
+    def __init__(self):
+        self.db = BlocklistDatabase()
+
     @jwt_required()
     def post(self):
         jti = get_jwt()['jti']
-        BLOCKLIST.add(jti)
+        self.db.collection.insert_one({"jti": jti})
         return {"message" : "Successfully logged out"}
         
 

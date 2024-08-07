@@ -1,10 +1,10 @@
-from flask import request # type: ignore
+from flask import request 
 import uuid
 from db.item import ItemDatabase
-from flask.views import MethodView # type: ignore
-from flask_smorest import Blueprint, abort # type: ignore
+from flask.views import MethodView
+from flask_smorest import Blueprint, abort
 from schemas import ItemSchema, ItemGetSchema, SuccessMessageSchema, ItemOptionalQuerySchema, ItemQuerySchema
-from flask_jwt_extended import jwt_required # type: ignore
+from flask_jwt_extended import jwt_required
 
 
 blp = Blueprint("Items", __name__, description="Operations on items")
@@ -27,14 +27,13 @@ class Item(MethodView):
             result = self.db.get_item(id)
             if not result:
                 abort(404, message="Given record doesn't exists")
-            return result
+            return [result]
 
     @jwt_required()
     @blp.arguments(ItemSchema)
     @blp.response(200, SuccessMessageSchema)
     def post(self, request_data):
-        id = uuid.uuid4().hex
-        self.db.add_item(id, request_data)
+        self.db.add_item(request_data)
         return {"message" : "Item added successfully"}, 201
 
     @jwt_required()

@@ -1,48 +1,66 @@
-import pyodbc  # type: ignore
+from pymongo import MongoClient 
+from bson.objectid import ObjectId 
+from dotenv import load_dotenv 
+import os
 
+# Load environment variables from .env file
+load_dotenv()
 
 class UserDatabase:
     def __init__(self):
-        self.conn = pyodbc.connect('DRIVER={SQL Server};SERVER=LAPTOP-54CDFJTF;DATABASE=cafe')
-        self.cursor = self.conn.cursor()
-    
+        # Retrieve the MongoDB URI from the environment variable
+        mongo_uri = os.getenv("MONGO_URI")
+        
+        # Connect to MongoDB using the URI from the environment
+        self.client = MongoClient(mongo_uri)
+        self.db = self.client.cafe  # Name of your database
+        self.collection = self.db.users  # Name of your collection
 
-    def get_user(self, id):
-        query = f"SELECT * FROM users WHERE id = '{id}'"
-        self.cursor.execute(query)
-        user_dict = {}
-        result = self.cursor.fetchone()
-        if result:
-            user_dict['id'], user_dict['username'], user_dict['password']  =  result
-        return user_dict
-
+    def get_user(self, user_id):
+        try:
+            user_id = ObjectId(user_id)  # Convert string ID to ObjectId
+            user = self.collection.find_one({"_id": user_id})
+            if user:
+                return {
+                    'id': str(user['_id']),  # Convert ObjectId to string
+                    'username': user['username'],
+                    'password': user['password']
+                }
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        return {}
 
     def add_user(self, username, password):
-        query = f"INSERT INTO users(username, password) VALUES('{username}', '{password}')"
         try:
-            self.cursor.execute(query)
-            self.conn.commit()
-            return True
-        except pyodbc.IntegrityError:
-            return False
-
-
-    def delete_user(self, id):
-        query = f"DELETE FROM users WHERE id = '{id}'"
-        self.cursor.execute(query)
-        if self.cursor.rowcount == 0:
-            return False
-        else:
-            self.conn.commit()
-            return True
+            if self.collection.find_one({'username': username}):
+                return False
         
-    
+            self.collection.insert_one({
+                'username': username,
+                'password': password
+            })
+            return True
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return False
+
+    def delete_user(self, user_id):
+        try:
+            user_id = ObjectId(user_id)  # Convert string ID to ObjectId
+            result = self.collection.delete_one({"_id": user_id})
+            return result.deleted_count > 0
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return False
+
     def verify_user(self, username, password):
-        query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
-        self.cursor.execute(query)
-        result = self.cursor.fetchone()
-        if result:
-            return result[0]
-
-
-
+        try:
+            user = self.collection.find_one({
+                'username': username,
+                'password': password
+            })
+            if user:
+                return str(user['_id'])  # Convert ObjectId to string
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        return None

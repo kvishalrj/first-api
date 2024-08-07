@@ -1,58 +1,63 @@
-import pyodbc  # type: ignore
+from pymongo import MongoClient 
+from bson.objectid import ObjectId 
+from dotenv import load_dotenv 
+import os
 
+# Load environment variables from .env file
+load_dotenv()
 
 class ItemDatabase:
     def __init__(self):
-        self.conn = pyodbc.connect('DRIVER={SQL Server};SERVER=LAPTOP-54CDFJTF;DATABASE=cafe')
-        self.cursor = self.conn.cursor()
-    
+        # Retrieve the MongoDB URI from the environment variable
+        mongo_uri = os.getenv("MONGO_URI")
+        
+        # Connect to MongoDB using the URI from the environment
+        self.client = MongoClient(mongo_uri)
+        self.db = self.client.cafe  # Name of your database
+        self.collection = self.db.item  # Name of your collection
+
     def get_items(self):
         result = []
-        query = "SELECT * FROM item"
-        self.cursor.execute(query)
-        for row in self.cursor.fetchall():
-            item_dict = {}
-            item_dict['id'], item_dict['name'], item_dict['price'] = row
+        for row in self.collection.find():
+            item_dict = {
+                'id': str(row['_id']),  # Convert ObjectId to string
+                'name': row['name'],
+                'price': row['price']
+            }
             result.append(item_dict)
-        
         return result
-            
 
     def get_item(self, item_id):
-        result = []
-        query = f"SELECT * FROM item WHERE id = '{item_id}'"
-        self.cursor.execute(query)
-        for row in self.cursor.fetchall():
-            item_dict = {}
-            item_dict['id'], item_dict['name'], item_dict['price']  = row
-            result.append(item_dict)
-        
-        return result
+        item_id = ObjectId(item_id)  # Convert string ID to ObjectId
+        item = self.collection.find_one({'_id': item_id})
+        if item:
+            return {
+                'id': str(item['_id']),  # Convert ObjectId to string
+                'name': item['name'],
+                'price': item['price']
+            }
+        return None
 
-
-    def add_item(self, id, body):
-        query = f"INSERT INTO item(id, name, price) VALUES('{id}', '{body['name']}', {body['price']})"
-        self.cursor.execute(query)
-        self.conn.commit()
-
-
-    def update_item(self, id, body):
-        query = f"UPDATE item SET name = '{body['name']}', price = '{body['price']}' WHERE id = '{id}'"
-        self.cursor.execute(query)
-        if self.cursor.rowcount == 0:
-            return False
-        else:
-            self.conn.commit()
+    def add_item(self, body):
+        try:
+            self.collection.insert_one({
+                'name': body['name'],
+                'price': body['price']
+            })
             return True
-
-
-    def delete_item(self, id):
-        query = f"DELETE FROM item WHERE id = '{id}'"
-        self.cursor.execute(query)
-        if self.cursor.rowcount == 0:
+        except Exception as e:
+            print(f"An error occurred: {e}")
             return False
-        else:
-            self.conn.commit()
-            return True
 
+    def update_item(self, item_id, body):
+        item_id = ObjectId(item_id)  # Convert string ID to ObjectId
+        result = self.collection.update_one(
+            {'_id': item_id},
+            {'$set': {'name': body['name'], 'price': body['price']}}
+        )
+        return result.modified_count > 0
 
+    def delete_item(self, item_id):
+        item_id = ObjectId(item_id)  # Convert string ID to ObjectId
+        result = self.collection.delete_one({'_id': item_id})
+        return result.deleted_count > 0

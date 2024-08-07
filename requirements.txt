@@ -3,3 +3,6 @@ python-dotenv
 flask-smorest
 pyodbc
 flask-jwt-extended
+bson
+pymongo
+python-dotenv
